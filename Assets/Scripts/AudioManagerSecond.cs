@@ -33,20 +33,20 @@ public class AudioManagerSecond : MonoBehaviour {
 	}
 
 	public void SetOne () {
-		one.value = (float) UDPReceive.ints[0] / 255;
+		//one.value = (float) UDPReceive.ints[0] / 255;
 
 		audioOne.volume = one.value < 0.2f ? one.value/4 : one.value;
 	}
 
 	public void SetTwo () {
-		two.value = (float) UDPReceive.ints[1] / 255;
+		//two.value = (float) UDPReceive.ints[1] / 255;
 
 		audioTwo.volume = two.value < 0.2f ? two.value/4 : two.value;
 
 	}
 
 	public void SetThree () {
-		three.value = (float) UDPReceive.ints[2] / 255;
+		//three.value = (float) UDPReceive.ints[2] / 255;
 
 		audioThree.volume = three.value < 0.2f ? three.value/4 : three.value;
 	}

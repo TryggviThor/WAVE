@@ -9,12 +9,17 @@ using System.Threading;
 
 public class UDPSend : MonoBehaviour {
 	// prefs
-	public string IP = IPAddress.Broadcast.ToString (); // 255.255.255.255
-	public int port = 5001;
+	public string IP = "127.0.0.1"; // 255.255.255.255
+	public int port = 52525;
+
+	public bool broadcast = true;
 
 	// "connection" things
 	IPEndPoint remoteEndPoint;
 	UdpClient client;
+
+	Thread broadcastThread;
+	UdpClient broadcastClient;
 
 	// gui
 	string strOne = "";
@@ -25,10 +30,16 @@ public class UDPSend : MonoBehaviour {
 
 	public void Start () {
 		initSender ();
+
+		if (broadcast) {
+			initBroadcast ();
+		}
 	}
 
 	void OnDisable () {
 		if (client != null) client.Close ();
+		if (broadcastThread != null) broadcastThread.Abort ();
+		if (broadcastClient != null) broadcastClient.Close ();
 	}
 
 	void OnGUI () {
@@ -56,19 +67,10 @@ public class UDPSend : MonoBehaviour {
 		}
 	}
 
-	// init
+	// Initialize the sender 
 	public void initSender () {
-		// Define the end point, to send the messages from
-		print ("UDPSend.init()");
-
-		// Send
-		remoteEndPoint = new IPEndPoint (IPAddress.Parse (IP), port); // 255.255.255.255 : 5001
+		remoteEndPoint = new IPEndPoint (IPAddress.Parse (IP), port);
 		client = new UdpClient ();
-
-		// status
-		print ("Sending to " + IP + " : " + port);
-		print ("Testing: nc -lu " + IP + " : " + port);
-
 	}
 
 	// sendData
@@ -88,14 +90,26 @@ public class UDPSend : MonoBehaviour {
 		}
 	}
 
-
-	// endless test
-	private void sendEndless (int one, int two, int three) {
-		do {
-			sendData (one, two, three);
-		}
-		while (true);
-
+	// Initialize the broadcasting thread
+	private void initBroadcast () {
+		broadcastThread = new Thread (
+				new ThreadStart (sendBroadcast));
+		broadcastThread.IsBackground = true;
+		broadcastThread.Start ();
 	}
 
+	// broadcast every few seconds
+	private void sendBroadcast () {
+		int broadcastPort = 52526;
+		IPEndPoint broadcastEndpoint = new IPEndPoint (IPAddress.Broadcast, broadcastPort);
+		broadcastClient = new UdpClient ();
+
+		byte[] tinyPacket = { Convert.ToByte (0) };
+
+		while (true) {
+			broadcastClient.Send (tinyPacket, tinyPacket.Length, broadcastEndpoint);
+
+			Thread.Sleep (2000);
+		}
+    }
 }

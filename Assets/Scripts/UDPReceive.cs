@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 using System;
 using System.Text;
@@ -9,14 +10,7 @@ using System.Threading;
 
 public class UDPReceive : MonoBehaviour {
 
-	// receiving Thread
-	Thread receiveThread;
-
-	// udpclient object
-	UdpClient client;
-
-	// public
-	public int port; // define > init
+	public int port = 52525;
 
 	// infos
 	public string lastReceivedUDPPacket = "";
@@ -25,16 +19,34 @@ public class UDPReceive : MonoBehaviour {
 	public static bool networkGUI = false;
 	public bool drawNetworkGUI = false;
 
-	public static int[] ints = new int[3] { 0, 0, 0 };
+	public static List<Vector3> vecList = new List<Vector3> ();
+	public List<string> addresses = new List<string> ();
+	public List<float> timers = new List<float> ();
 
 
-	
+	float timeoutSeconds = 5.0f;
+	Thread receiveThread;
+	UdpClient client;
+
 	void Start () {
 		initThread ();
 	}
 
 	void Update () {
 		networkGUI = drawNetworkGUI;
+
+		// Count down all timers
+		for (int i = 0; i < timers.Count; i++) {
+			timers[i] -= 1.0f * Time.deltaTime;
+			if (timers[i] < 0.0f) timers[i] = 0.0f;
+        }
+
+		// When there's only one address left that's not getting removed, remove it
+		if (addresses.Count == 1 && timers[0] == 0.0f) {
+			addresses.RemoveAt (0);
+			vecList.RemoveAt (0);
+			timers.RemoveAt (0);
+		}
 	}
 
 	void OnDisable () {
@@ -60,7 +72,7 @@ public class UDPReceive : MonoBehaviour {
 		}
 	}
 
-	// init
+	// initialize the thread
 	private void initThread () {
 		receiveThread = new Thread (
 			new ThreadStart (ReceiveData));
@@ -71,26 +83,57 @@ public class UDPReceive : MonoBehaviour {
 	// receive thread
 	private void ReceiveData () {
 		client = new UdpClient (port);
-		while (true) {
+		IPEndPoint anyIP = new IPEndPoint (IPAddress.Any, 0);
+
+		bool IPexists;
+        while (true) {
 			try {
-				IPEndPoint anyIP = new IPEndPoint (IPAddress.Any, 0);
 				byte[] data = client.Receive (ref anyIP);
 
-				if (data.Length > 0) ints[0] = data[0] & 0xff;
-				if (data.Length > 1) ints[1] = data[1] & 0xff;
-				if (data.Length > 2) ints[2] = data[2] & 0xff;
+				// Unregister IP if it has timed out
+				int i;
+				for (i = timers.Count - 1; i >= 0; i--) {
+					if (timers[i] == 0.0f) {
+						addresses.RemoveAt (i);
+						vecList.RemoveAt (i);
+						timers.RemoveAt (i);
+					}
+				}
 
-				string text = ints[0] + ", " + ints[1] + ", " + ints[2];
-				//Debug.Log (">> " + text);
+				// Register the IP if it hasn't been seen before
+				IPexists = false;
+				for (i = 0; i < addresses.Count; i++) {
+					// Check if the IP is already registered
+					if (addresses[i] == anyIP.Address.ToString ()) {
+						timers[i] = timeoutSeconds;
+						IPexists = true;
+						break;
+					} else {
+						IPexists = false;
+					}
+				}
+				if (!IPexists) {
+					// Couldn't find the IP
+					addresses.Add (anyIP.Address.ToString ());
+					vecList.Add (Vector3.zero);
+					timers.Add (timeoutSeconds);
+				}
+
+				// Convert data bytes to int, then to a float, inside a vector3
+				vecList[i] = new Vector3 ((float) (data[0] & 0xff) / 255, 
+										  (float) (data[1] & 0xff) / 255, 
+										  (float) (data[2] & 0xff) / 255);
+
+				string text = vecList[i].x + ", " + vecList[i].y + ", " + vecList[i].z;
 
 				lastReceivedUDPPacket = text;
-
-				allReceivedUDPPackets = allReceivedUDPPackets + text + "\n";
-				allReceivedUDPPackets = "";
+				//allReceivedUDPPackets = allReceivedUDPPackets + text + "\n";
             }
 			catch (Exception err) {
 				Debug.Log (err.ToString ());
 			}
+
+			
 		}
 	}
 

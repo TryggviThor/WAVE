@@ -33,7 +33,7 @@ public class AudioManager : MonoBehaviour {
 	}
 
 	public void SetOne () {
-		one.value = (float) UDPReceive.ints[0] / 255;
+		//one.value = (float) UDPReceive.ints[0] / 255;
 
 		if (one.value < 0.5f) {
 			audioOne.volume = one.value * 2;
@@ -47,7 +47,7 @@ public class AudioManager : MonoBehaviour {
 	}
 
 	public void SetTwo () {
-		two.value = (float) UDPReceive.ints[1] / 255;
+		//two.value = (float) UDPReceive.ints[1] / 255;
 		
 		float freqMax = 22000f;
 		float freq = freqMax * two.value;
@@ -58,7 +58,7 @@ public class AudioManager : MonoBehaviour {
 	}
 
 	public void SetThree () {
-		three.value = (float) UDPReceive.ints[2] / 255;
+		//three.value = (float) UDPReceive.ints[2] / 255;
 
 		// Flange 0f - 20f Hz
 		masterMixer.SetFloat ("masterFlange", 20f * three.value);
