@@ -24,7 +24,7 @@ public class UDPReceive : MonoBehaviour {
 	public List<float> timers = new List<float> ();
 
 
-	float timeoutSeconds = 5.0f;
+	float timeoutSeconds = 3.0f;
 	Thread receiveThread;
 	UdpClient client;
 
